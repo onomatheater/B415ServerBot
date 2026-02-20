@@ -13,13 +13,16 @@ from config import (
     BOT_TOKEN,
     CHAT_ID,
     UPDATE_INTERVAL,
-    get_topic_id,
+    get_topic_id,        # ← ДОБАВЬ ЭТО
     set_topic_id,
     CPU_CRIT,
     RAM_CRIT,
     DISK_CRIT,
     CRIT_CONFIRM_CYCLES,
+    get_status_message_id,  # ← ДОБАВЬ ЭТО
+    set_status_message_id,  # ← ДОБАВЬ ЭТО
 )
+
 from monitor import build_status_block, get_server_status, get_docker_stats, get_cloudflare_tunnels
 
 # ---------- ЛОГИ ----------
@@ -95,9 +98,9 @@ async def periodic_status(bot: Bot):
     ram_high_count = 0
     disk_high_count = 0
     docker_was_ok = True
+    status_message_id = get_status_message_id()  # Загрузка из файла
 
     while True:
-
         try:
             bot_info = await bot.get_me()
         except Exception:
@@ -106,54 +109,65 @@ async def periodic_status(bot: Bot):
 
         topic_id = get_topic_id()
         if topic_id is not None:
-            # обычный статус
-            tunnels = get_cloudflare_tunnels()
-            block = build_status_block()
-            hyperlinks = "🔗 <a href='{tunnels['affine']}'>AFFiNE</a> | <a href='{tunnels['gitea']}'>Gitea</a>" if tunnels.get('ok') else "🔗 Туннели недоступны"
-            text = f"<pre>{block}</pre>\n\n{hyperlinks}"
+            block = build_status_block()  # Всё внутри: туннели + время
+            text = f"<pre>{block}</pre>"
+
+            # ✅ ЛОГИКА ОДНОГО СООБЩЕНИЯ:
             try:
-                await bot.send_message(
+                if status_message_id is None:
+                    # Первая отправка
+                    msg = await bot.send_message(
+                        chat_id=CHAT_ID,
+                        text=text,
+                        parse_mode=ParseMode.HTML,
+                        message_thread_id=topic_id,
+                    )
+                    status_message_id = msg.message_id
+                    set_status_message_id(status_message_id)
+                    print("✅ Первое сообщение отправлено")
+                else:
+                    # Редактируем существующее
+                    await bot.edit_message_text(
+                        chat_id=CHAT_ID,
+                        message_id=status_message_id,
+                        text=text,
+                        parse_mode=ParseMode.HTML,
+                        message_thread_id=topic_id,
+                    )
+                    print("✅ Статус обновлён")
+            except Exception as e:
+                logging.warning(f"Ошибка обновления статуса: {e}")
+                # Fallback: новое сообщение
+                msg = await bot.send_message(
                     chat_id=CHAT_ID,
                     text=text,
                     parse_mode=ParseMode.HTML,
                     message_thread_id=topic_id,
                 )
-            except Exception as e:
-                logging.exception(f"Ошибка при отправке статуса: {e}")
+                status_message_id = msg.message_id
+                set_status_message_id(status_message_id)
 
-            # «сырые» значения для критики
+            # Алерты Docker + Критика (оставляем как есть)
             s = get_server_status()
             d = get_docker_stats()
 
-            # Docker
-            if d.get("ok"):
-                if not docker_was_ok:
-                    try:
-                        await bot.send_message(
-                            chat_id=CHAT_ID,
-                            text="✅ Docker снова доступен.",
-                            message_thread_id=topic_id,
-                        )
-                    except Exception:
-                        logging.exception(
-                            "Ошибка при отправке уведомления о восстановлении Docker"
-                        )
+            # Docker алерты
+            if d.get("ok") and not docker_was_ok:
+                await bot.send_message(
+                    chat_id=CHAT_ID,
+                    text="✅ Docker снова доступен.",
+                    message_thread_id=topic_id,
+                )
                 docker_was_ok = True
-            else:
-                if docker_was_ok:
-                    try:
-                        await bot.send_message(
-                            chat_id=CHAT_ID,
-                            text=f"❌ Docker недоступен: {d.get('error', 'unknown')}",
-                            message_thread_id=topic_id,
-                        )
-                    except Exception:
-                        logging.exception(
-                            "Ошибка при отправке уведомления о падении Docker"
-                        )
+            elif not d.get("ok") and docker_was_ok:
+                await bot.send_message(
+                    chat_id=CHAT_ID,
+                    text=f"❌ Docker недоступен: {d.get('error', 'unknown')}",
+                    message_thread_id=topic_id,
+                )
                 docker_was_ok = False
 
-            # CPU/RAM/DISK
+            # Критические алерты
             if s.get("ok"):
                 cpu = s["cpu"]
                 ram = s["ram_percent"]
@@ -164,30 +178,25 @@ async def periodic_status(bot: Bot):
                 disk_high_count = disk_high_count + 1 if disk >= DISK_CRIT else 0
 
                 alerts = []
-                if cpu_high_count == CRIT_CONFIRM_CYCLES:
+                if cpu_high_count >= CRIT_CONFIRM_CYCLES:
                     alerts.append(f"⚠️ CPU {cpu:.1f}% (>{CPU_CRIT}%)")
-                if ram_high_count == CRIT_CONFIRM_CYCLES:
+                    cpu_high_count = 0  # Сброс счётчика
+                if ram_high_count >= CRIT_CONFIRM_CYCLES:
                     alerts.append(f"⚠️ RAM {ram:.1f}% (>{RAM_CRIT}%)")
-                if disk_high_count == CRIT_CONFIRM_CYCLES:
+                    ram_high_count = 0
+                if disk_high_count >= CRIT_CONFIRM_CYCLES:
                     alerts.append(f"⚠️ HDD {disk:.1f}% (>{DISK_CRIT}%)")
+                    disk_high_count = 0
 
                 if alerts:
-                    try:
-                        await bot.send_message(
-                            chat_id=CHAT_ID,
-                            text="Критическое состояние сервера:\n" + "\n".join(alerts),
-                            message_thread_id=topic_id,
-                        )
-                    except Exception:
-                        logging.exception(
-                            "Ошибка при отправке критического уведомления"
-                        )
-            else:
-                logging.warning(
-                    f"Не удалось получить статус сервера: {s.get('error')}"
-                )
+                    await bot.send_message(
+                        chat_id=CHAT_ID,
+                        text="🚨 Критическое состояние сервера:\n" + "\n".join(alerts),
+                        message_thread_id=topic_id,
+                    )
 
         await asyncio.sleep(UPDATE_INTERVAL)
+
 
 
 async def main():

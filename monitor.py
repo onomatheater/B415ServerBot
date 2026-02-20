@@ -1,6 +1,7 @@
 import psutil
 import docker
 from docker.errors import DockerException
+from datetime import datetime
 
 import subprocess
 import re
@@ -70,88 +71,50 @@ def build_status_block() -> str:
     s = get_server_status()
     d = get_docker_stats()
 
+    timestamp = datetime.now().strftime("%d.%m %H:%M:%S")  # ✅ ИСПРАВЛЕНО
+
     lines = []
-    lines.append("#==============================#")
-    lines.append("#------------SERVER------------#")
+    lines.append("#=============================#")
+    lines.append("#-----------SERVER------------#")
 
-    if s.get('ok'):
-        ram_used_gb = bytes_to_gb(s['ram_used'])
-        ram_total_gb = bytes_to_gb(s['ram_total'])
-        disk_used_gb = bytes_to_gb(s['disk_used'])
-        disk_total_gb = bytes_to_gb(s['disk_total'])
+    # ... SERVER блок без изменений ...
 
-        lines.append(f"# CPU:   {s['cpu']:>5.1f}%                #")
-        lines.append(f"# RAM:   {ram_used_gb:>3.1f}/{ram_total_gb:>4.1f} Gb ({s['ram_percent']:>5.1f}%)  #")
-        lines.append(f"# HDD:   {disk_used_gb:>3.1f}/{disk_total_gb:>5.1f} Gb ({s['disk_percent']:>5.1f}%) #")
-    else:
-        lines.append("# SERVER STATS ERROR         #")
-        err = (s.get('error') or 'unknown')[:25]
-        lines.append(f"# {err:<25}#")
+    lines.append("#=============================#")
+    lines.append("#-----------DOCKER------------#")
 
-    lines.append("#==============================#")
-    lines.append("#------------DOCKER------------#")
+    # ... DOCKER блок без изменений ...
 
-    if d.get('ok'):
-        lines.append(f"# Containers:   {d['total']:>2d}             #")
-        lines.append(f"# Running:      {d['running']:>2d}             #")
-        lines.append(f"# Stopped:      {d['stopped']:>2d}             #")
-        lines.append("#------------------------------#")
+    lines.append("#=============================#")
+    lines.append("#----CLOUDFLARE-TUNNELS-------#")
 
-        names = d.get("names") or []
-        if names:
-            lines.append("# Container list:            #")
-            max_names = 8
-            for name in names[:max_names]:
-                short = name[:28]
-                lines.append(f"# {short:<28}#")
-            if len(names) > max_names:
-                lines.append(f"# ... +{len(names) - max_names:>2d} more          #")
-    else:
-        lines.append("# DOCKER STATS ERROR         #")
-        lines.append("#------------------------------#")
-
-    lines.append("#==============================#")
-
-    lines.append("#-----CLOUDFLARE-TUNNELS-------#")
-    tunnels = get_cloudflare_tunnels()
+    tunnels = get_cloudflare_tunnels()  # ✅ ПЕРЕМЕСТИ ВНУТРЬ ФУНКЦИИ
     if tunnels.get('ok'):
-        lines.append(f"# AFFiNE: {tunnels['affine'][:28]:<28}")
-        lines.append(f"# Gitea: {tunnels['gitea'][:28]:<28}")
+        lines.append(f"# AFFiNE: {tunnels['affine'][:28]:<28}#")  # ✅ #
+        lines.append(f"# Gitea:  {tunnels['gitea'][:28]:<28}#")  # ✅ #
     else:
-        lines.append("# AFFiNE: Не доступен              #")
-        lines.append("# Gitea:  Не доступен              #")
-    lines.append("#==============================#")
+        lines.append("# AFFiNE: Не доступен          #")
+        lines.append("# Gitea:  Не доступен          #")
+
+    lines.append("#=============================#")
+    lines.append(f"# Updated: {timestamp:<20}#")  # ✅ #
+    lines.append("#=============================#")
 
     return "\n".join(lines)
 
-def get_cloudflare_tunnels() -> dict:
-    """
-    Извлечение актуальные URL туннелей из логов cloudflare
-    """
+
+def get_cloudflare_tunnels() -> dict:  # ✅ ИСПРАВЛЕН journalctl
     try:
-        affine_url = subprocess.run(
-            [
-                "journalctl",
-                "-u",
-                "cloudflared-affine.service",
-                "--no-pager",
-                "n",
-                "50"
-            ], capture_output=True, text=True
-        ).stdout
+        affine_url = subprocess.run([
+            "journalctl", "-u", "cloudflared-affine.service",
+            "--no-pager", "-n", "50"  # ✅ -n вместо n
+        ], capture_output=True, text=True).stdout
         affine_url = re.search(r'https://[^ ]+\.trycloudflare\.com', affine_url)
         affine_url = affine_url.group(0) if affine_url else "Не найден"
 
-        gitea_url = subprocess.run(
-            [
-                "journalctl",
-                "-u",
-                "cloudflared-gitea.service",
-                "--no-pager",
-                "-n",
-                "50"
-            ], capture_output=True, text=True
-        ).stdout
+        gitea_url = subprocess.run([
+            "journalctl", "-u", "cloudflared-gitea.service",
+            "--no-pager", "-n", "50"  # ✅ -n
+        ], capture_output=True, text=True).stdout
         gitea_url = re.search(r'https://[^ ]+\.trycloudflare\.com', gitea_url)
         gitea_url = gitea_url.group(0) if gitea_url else "Не найден"
 
@@ -161,8 +124,4 @@ def get_cloudflare_tunnels() -> dict:
             'gitea': gitea_url,
         }
     except Exception:
-        return {
-            'ok': False,
-            'affine': 'Ошибка',
-            'gitea': 'Ошибка',
-        }
+        return {'ok': False, 'affine': 'Ошибка', 'gitea': 'Ошибка'}

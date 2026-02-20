@@ -1,10 +1,11 @@
 import psutil
 import docker
 from docker.errors import DockerException
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import subprocess
 import re
 
+MINSK_TZ = timezone(timedelta(hours=3))
 docker_client = docker.from_env()
 
 def get_server_status() -> dict:
@@ -74,67 +75,70 @@ def get_cloudflare_tunnels() -> dict:
     except Exception:
         return {'ok': False, 'affine': 'Ошибка', 'gitea': 'Ошибка'}
 
+
 def build_status_block() -> str:
     s = get_server_status()
     d = get_docker_stats()
-    timestamp = datetime.now().strftime("%d.%m %H:%M:%S")
+    timestamp = datetime.now(MINSK_TZ).strftime("%d.%m %H:%M:%S")
 
     lines = []
-    lines.append("#=============================#")
-    lines.append("#-----------SERVER------------#")
+    lines.append("#=============================#")  # 29 символов
 
-    # ✅ SERVER БЛОК
-    lines.append("#-----------SERVER------------#")
+    lines.append("#-----------SERVER------------#")  # 29
+
+    # ✅ SERVER — ФИКС 29 символов
     if s.get('ok'):
-        cpu_str = f"{s['cpu']:>5.1f}%"
         ram_used_gb = bytes_to_gb(s['ram_used'])
         ram_total_gb = bytes_to_gb(s['ram_total'])
         disk_used_gb = bytes_to_gb(s['disk_used'])
         disk_total_gb = bytes_to_gb(s['disk_total'])
 
-        lines.append(f"# CPU:{cpu_str:>22}#")  # 5+22+2=29
-        lines.append(f"# RAM:{ram_used_gb:>3.1f}/{ram_total_gb:>4.1f}Gb({s['ram_percent']:>5.1f}%)#")  # 29
-        lines.append(f"# HDD:{disk_used_gb:>3.1f}/{disk_total_gb:>5.1f}Gb({s['disk_percent']:>5.1f}%)#")  # 29
+        lines.append(f"# CPU:{s['cpu']:>6.1f}%                   #")  # 6+22=29
+        lines.append(f"# RAM:{ram_used_gb:>3.1f}/{ram_total_gb:>3.1f}G({s['ram_percent']:>5.1f}%)     #")  # 29
+        lines.append(f"# HDD:{disk_used_gb:>3.1f}/{disk_total_gb:>4.1f}G({s['disk_percent']:>5.1f}%)    #")  # 29
     else:
         lines.append("# SERVER STATS ERROR           #")  # 29
-        lines.append("#-----------------------------#")
+        lines.append("#-----------------------------#")  # 29
 
-    lines.append("#=============================#")
-    lines.append("#-----------DOCKER------------#")
+    lines.append("#=============================#")  # 29
+    lines.append("#-----------DOCKER------------#")  # 29
 
-    # ✅ DOCKER БЛОК
+    # ✅ DOCKER — ФИКС 29 символов
     if d.get('ok'):
-        lines.append(f"# Containers:{d['total']:>3d}                 #")  # 29
-        lines.append(f"# Running:   {d['running']:>3d}                 #")  # 29
-        lines.append(f"# Stopped:   {d['stopped']:>3d}                 #")  # 29
-        lines.append("#-----------------------------#")
+        lines.append(f"# Containers:{d['total']:>3}              #")  # 29
+        lines.append(f"# Running:{d['running']:>4}                #")  # 29
+        lines.append(f"# Stopped:{d['stopped']:>5}                #")  # 29
+        lines.append("#-----------------------------#")  # 29
 
         names = d.get("names") or []
         if names:
-            lines.append("# Containers list:           #")
+            lines.append("# Container list:            #")  # 29
             for name in names[:2]:
                 short = name[:24]
                 lines.append(f"# {short:<24}#")  # 1+24+4=29
+        else:
+            lines.append("# No containers              #")  # 29
     else:
-        lines.append("# DOCKER ERROR                #")
-        lines.append("#-----------------------------#")
+        lines.append("# DOCKER STATS ERROR         #")  # 29
+        lines.append("#-----------------------------#")  # 29
 
-    lines.append("#=============================#")
-    lines.append("#----CLOUDFLARE-TUNNELS-------#")
+    lines.append("#=============================#")  # 29
+    lines.append("#----CLOUDFLARE-TUNNELS-------#")  # 29
 
-    # ✅ CLOUDFLARE БЛОК
+    # ✅ CLOUDFLARE — ФИКС 29 символов
     tunnels = get_cloudflare_tunnels()
     if tunnels.get('ok'):
         affine_short = tunnels['affine'][:25]
         gitea_short = tunnels['gitea'][:25]
-        lines.append(f"# AFFiNE: {affine_short:<25}#")  # 29
-        lines.append(f"# Gitea:  {gitea_short:<25}#")  # 29
+        lines.append(f"# AFFiNE:{affine_short:<23}#")  # 29
+        lines.append(f"# Gitea:{gitea_short:<24}#")  # 29
     else:
-        lines.append("# AFFiNE: Не доступен          #")  # 29
-        lines.append("# Gitea:  Не доступен          #")  # 29
+        lines.append("# AFFiNE:Не доступен           #")  # 29
+        lines.append("# Gitea: Не доступен           #")  # 29
 
-    lines.append("#=============================#")
-    lines.append(f"# Updated:{timestamp:>20}#")  # 29
-    lines.append("#=============================#")
+    lines.append("#=============================#")  # 29
+    lines.append(f"# Updated:{timestamp:>21}#")  # 29
+    lines.append("#=============================#")  # 29
 
     return "\n".join(lines)
+

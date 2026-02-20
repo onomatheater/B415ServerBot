@@ -81,64 +81,62 @@ def build_status_block() -> str:
     d = get_docker_stats()
     timestamp = datetime.now(MINSK_TZ).strftime("%d.%m %H:%M:%S")
 
+    WIDTH = 27  # ← Фиксированная ширина контента (27 символов)
+
     lines = []
-    lines.append("#=============================#")  # 29 символов
+    lines.append("#=============================#")
 
-    lines.append("#-----------SERVER------------#")  # 29
-
-    # ✅ SERVER — ФИКС 29 символов
+    # SERVER
+    lines.append("#-----------SERVER------------#")
     if s.get('ok'):
         ram_used_gb = bytes_to_gb(s['ram_used'])
         ram_total_gb = bytes_to_gb(s['ram_total'])
         disk_used_gb = bytes_to_gb(s['disk_used'])
         disk_total_gb = bytes_to_gb(s['disk_total'])
 
-        lines.append(f"# CPU:{s['cpu']:>6.1f}%                   #")  # 6+22=29
-        lines.append(f"# RAM:{ram_used_gb:>3.1f}/{ram_total_gb:>3.1f}G({s['ram_percent']:>5.1f}%)     #")  # 29
-        lines.append(f"# HDD:{disk_used_gb:>3.1f}/{disk_total_gb:>4.1f}G({s['disk_percent']:>5.1f}%)    #")  # 29
+        lines.append(f"# CPU: {s['cpu']:>5.1f}%".ljust(WIDTH) + "#")
+        lines.append(f"# RAM: {ram_used_gb:>3.1f}/{ram_total_gb:>4.1f}G ({s['ram_percent']:>5.1f}%)".ljust(WIDTH) + "#")
+        lines.append(
+            f"# HDD: {disk_used_gb:>3.1f}/{disk_total_gb:>5.1f}G ({s['disk_percent']:>5.1f}%)".ljust(WIDTH) + "#")
     else:
-        lines.append("# SERVER STATS ERROR           #")  # 29
-        lines.append("#-----------------------------#")  # 29
+        lines.append("# SERVER ERROR".ljust(WIDTH) + "          #")
 
-    lines.append("#=============================#")  # 29
-    lines.append("#-----------DOCKER------------#")  # 29
+    lines.append("#=============================#")
+    lines.append("#-----------DOCKER------------#")
 
-    # ✅ DOCKER — ФИКС 29 символов
+    # DOCKER
     if d.get('ok'):
-        lines.append(f"# Containers:{d['total']:>3}              #")  # 29
-        lines.append(f"# Running:{d['running']:>4}                #")  # 29
-        lines.append(f"# Stopped:{d['stopped']:>5}                #")  # 29
-        lines.append("#-----------------------------#")  # 29
+        lines.append(f"# Containers: {d['total']:>2}".ljust(WIDTH) + "#")
+        lines.append(f"# Running:    {d['running']:>2}".ljust(WIDTH) + "#")
+        lines.append(f"# Stopped:    {d['stopped']:>2}".ljust(WIDTH) + "#")
+        lines.append("#-----------------------------#")
 
         names = d.get("names") or []
         if names:
-            lines.append("# Container list:            #")  # 29
+            lines.append("# Containers:".ljust(WIDTH) + "#")
             for name in names[:2]:
-                short = name[:24]
-                lines.append(f"# {short:<24}#")  # 1+24+4=29
+                lines.append(f"# {name[:24]}".ljust(WIDTH) + "#")
         else:
-            lines.append("# No containers              #")  # 29
+            lines.append("# No containers".ljust(WIDTH) + "#")
     else:
-        lines.append("# DOCKER STATS ERROR         #")  # 29
-        lines.append("#-----------------------------#")  # 29
+        lines.append("# DOCKER ERROR".ljust(WIDTH) + "       #")
+        lines.append("#-----------------------------#")
 
-    lines.append("#=============================#")  # 29
-    lines.append("#----CLOUDFLARE-TUNNELS-------#")  # 29
+    lines.append("#=============================#")
+    lines.append("#----CLOUDFLARE-TUNNELS-------#")
 
-    # ✅ CLOUDFLARE — ФИКС 29 символов
+    # CLOUDFLARE
     tunnels = get_cloudflare_tunnels()
     if tunnels.get('ok'):
-        affine_short = tunnels['affine'][:25]
-        gitea_short = tunnels['gitea'][:25]
-        lines.append(f"# AFFiNE:{affine_short:<23}#")  # 29
-        lines.append(f"# Gitea:{gitea_short:<24}#")  # 29
+        lines.append(f"# AFFiNE: {tunnels['affine'][:24]}".ljust(WIDTH) + "#")
+        lines.append(f"# Gitea:  {tunnels['gitea'][:24]}".ljust(WIDTH) + "#")
     else:
-        lines.append("# AFFiNE:Не доступен           #")  # 29
-        lines.append("# Gitea: Не доступен           #")  # 29
+        lines.append("# AFFiNE: Не доступен".ljust(WIDTH) + "#")
+        lines.append("# Gitea:  Не доступен".ljust(WIDTH) + "#")
 
-    lines.append("#=============================#")  # 29
-    lines.append(f"# Updated:{timestamp:>21}#")  # 29
-    lines.append("#=============================#")  # 29
+    lines.append("#=============================#")
+    lines.append(f"# Updated: {timestamp}".ljust(WIDTH) + "#")
+    lines.append("#=============================#")
 
     return "\n".join(lines)
 

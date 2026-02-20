@@ -84,10 +84,10 @@ def build_status_block() -> str:
     WIDTH = 27  # ← Фиксированная ширина контента (27 символов)
 
     lines = []
-    lines.append("#=============================#")
+    lines.append("#==========================#")
 
     # SERVER
-    lines.append("#-----------SERVER------------#")
+    lines.append("#-----------SERVER---------#")
     if s.get('ok'):
         ram_used_gb = bytes_to_gb(s['ram_used'])
         ram_total_gb = bytes_to_gb(s['ram_total'])
@@ -101,15 +101,15 @@ def build_status_block() -> str:
     else:
         lines.append("# SERVER ERROR".ljust(WIDTH) + "          #")
 
-    lines.append("#=============================#")
-    lines.append("#-----------DOCKER------------#")
+    lines.append("#==========================#")
+    lines.append("#-----------DOCKER---------#")
 
     # DOCKER
     if d.get('ok'):
         lines.append(f"# Containers: {d['total']:>2}".ljust(WIDTH) + "#")
         lines.append(f"# Running:    {d['running']:>2}".ljust(WIDTH) + "#")
         lines.append(f"# Stopped:    {d['stopped']:>2}".ljust(WIDTH) + "#")
-        lines.append("#-----------------------------#")
+        lines.append("#--------------------------#")
 
         names = d.get("names") or []
         if names:
@@ -120,10 +120,10 @@ def build_status_block() -> str:
             lines.append("# No containers".ljust(WIDTH) + "#")
     else:
         lines.append("# DOCKER ERROR".ljust(WIDTH) + "       #")
-        lines.append("#-----------------------------#")
+        lines.append("#--------------------------#")
 
-    lines.append("#=============================#")
-    lines.append("#----CLOUDFLARE-TUNNELS-------#")
+    lines.append("#==========================#")
+    lines.append("#----CLOUDFLARE-TUNNELS----#")
 
     # CLOUDFLARE
     tunnels = get_cloudflare_tunnels()
@@ -134,9 +134,9 @@ def build_status_block() -> str:
         lines.append("# AFFiNE: Не доступен".ljust(WIDTH) + "#")
         lines.append("# Gitea:  Не доступен".ljust(WIDTH) + "#")
 
-    lines.append("#=============================#")
+    lines.append("#==========================#")
     lines.append(f"# Updated: {timestamp}".ljust(WIDTH) + "#")
-    lines.append("#=============================#")
+    lines.append("#==========================#")
 
     return "\n".join(lines)
 

@@ -114,6 +114,7 @@ async def periodic_status(bot: Bot):
 
             # ✅ ЛОГИКА ОДНОГО СООБЩЕНИЯ:
             try:
+                print(f"--- Цикл #{cpu_high_count}, msg_id={status_message_id}, topic={topic_id}")
                 if status_message_id is None:
                     # Первая отправка
                     msg = await bot.send_message(
@@ -132,9 +133,9 @@ async def periodic_status(bot: Bot):
                         message_id=status_message_id,
                         text=text,
                         parse_mode=ParseMode.HTML,
-                        message_thread_id=topic_id,
                     )
                     print("✅ Статус обновлён")
+                    print("✅ Статус обновлён", f"ID={status_message_id}")
             except Exception as e:
                 logging.warning(f"Ошибка обновления статуса: {e}")
                 # Fallback: новое сообщение

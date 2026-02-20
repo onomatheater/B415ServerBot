@@ -1,0 +1,6 @@
+# requirements.txt
+
+aiogram==3.13.1
+psutil==6.0.0
+docker==7.1.0
+python-dotenv==1.0.1

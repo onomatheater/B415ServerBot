@@ -51,11 +51,9 @@ newgrp docker
 
 ```bash
 cd ~
-git clone https://github.com/USERNAME/REPO_NAME.git
-cd REPO_NAME
+git clone https://github.com/onomatheater/B415ServerBot.git
+cd B415ServerBot
 ```
-
-Замените `USERNAME/REPO_NAME` на свои.
 
 ### 3. Создание виртуального окружения и установка зависимостей
 
@@ -100,7 +98,7 @@ CRIT_CONFIRM_CYCLES=3
 ### 6. Первый запуск
 
 ```bash
-cd ~/REPO_NAME
+cd ~/B415ServerBot
 source venv/bin/activate
 python bot.py
 ```
@@ -133,8 +131,8 @@ Wants=network-online.target docker.service
 [Service]
 Type=simple
 User=USERNAME
-WorkingDirectory=/home/USERNAME/REPO_NAME
-ExecStart=/home/USERNAME/REPO_NAME/venv/bin/python /home/USERNAME/REPO_NAME/bot.py
+WorkingDirectory=/home/USERNAME/B415ServerBot
+ExecStart=/home/USERNAME/B415ServerBot/venv/bin/python /home/USERNAME/B415ServerBot/bot.py
 
 Restart=always
 RestartSec=10
@@ -145,7 +143,7 @@ Environment="PYTHONUNBUFFERED=1"
 WantedBy=multi-user.target
 ```
 
-Замените `USERNAME` и `REPO_NAME` на свои.
+Замените `USERNAME` на имя вашего пользователя в системе.
 
 Активируйте сервис:
 

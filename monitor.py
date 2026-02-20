@@ -84,36 +84,39 @@ def build_status_block() -> str:
     lines.append("#-----------SERVER------------#")
 
     # ✅ SERVER БЛОК
+    lines.append("#-----------SERVER------------#")
     if s.get('ok'):
+        cpu_str = f"{s['cpu']:>5.1f}%"
         ram_used_gb = bytes_to_gb(s['ram_used'])
         ram_total_gb = bytes_to_gb(s['ram_total'])
         disk_used_gb = bytes_to_gb(s['disk_used'])
         disk_total_gb = bytes_to_gb(s['disk_total'])
-        lines.append(f"# CPU:   {s['cpu']:>5.1f}%                #")
-        lines.append(f"# RAM:   {ram_used_gb:>3.1f}/{ram_total_gb:>4.1f} Gb ({s['ram_percent']:>5.1f}%) #")
-        lines.append(f"# HDD:   {disk_used_gb:>3.1f}/{disk_total_gb:>5.1f} Gb ({s['disk_percent']:>5.1f}%) #")
+
+        lines.append(f"# CPU:{cpu_str:>22}#")  # 5+22+2=29
+        lines.append(f"# RAM:{ram_used_gb:>3.1f}/{ram_total_gb:>4.1f}Gb({s['ram_percent']:>5.1f}%)#")  # 29
+        lines.append(f"# HDD:{disk_used_gb:>3.1f}/{disk_total_gb:>5.1f}Gb({s['disk_percent']:>5.1f}%)#")  # 29
     else:
-        lines.append("# SERVER STATS ERROR         #")
-        err = (s.get('error') or 'unknown')[:25]
-        lines.append(f"# {err:<25}#")
+        lines.append("# SERVER STATS ERROR           #")  # 29
+        lines.append("#-----------------------------#")
 
     lines.append("#=============================#")
     lines.append("#-----------DOCKER------------#")
 
     # ✅ DOCKER БЛОК
     if d.get('ok'):
-        lines.append(f"# Containers:   {d['total']:>2d}             #")
-        lines.append(f"# Running:      {d['running']:>2d}             #")
-        lines.append(f"# Stopped:      {d['stopped']:>2d}             #")
+        lines.append(f"# Containers:{d['total']:>3d}                 #")  # 29
+        lines.append(f"# Running:   {d['running']:>3d}                 #")  # 29
+        lines.append(f"# Stopped:   {d['stopped']:>3d}                 #")  # 29
         lines.append("#-----------------------------#")
+
         names = d.get("names") or []
         if names:
-            lines.append("# Container list:            #")
-            for name in names[:3]:  # Первые 3
-                short = name[:28]
-                lines.append(f"# {short:<28}#")
+            lines.append("# Containers list:           #")
+            for name in names[:2]:
+                short = name[:24]
+                lines.append(f"# {short:<24}#")  # 1+24+4=29
     else:
-        lines.append("# DOCKER STATS ERROR         #")
+        lines.append("# DOCKER ERROR                #")
         lines.append("#-----------------------------#")
 
     lines.append("#=============================#")
@@ -122,14 +125,16 @@ def build_status_block() -> str:
     # ✅ CLOUDFLARE БЛОК
     tunnels = get_cloudflare_tunnels()
     if tunnels.get('ok'):
-        lines.append(f"# AFFiNE: {tunnels['affine'][:28]:<28}#")
-        lines.append(f"# Gitea:  {tunnels['gitea'][:28]:<28}#")
+        affine_short = tunnels['affine'][:25]
+        gitea_short = tunnels['gitea'][:25]
+        lines.append(f"# AFFiNE: {affine_short:<25}#")  # 29
+        lines.append(f"# Gitea:  {gitea_short:<25}#")  # 29
     else:
-        lines.append("# AFFiNE: Не доступен          #")
-        lines.append("# Gitea:  Не доступен          #")
+        lines.append("# AFFiNE: Не доступен          #")  # 29
+        lines.append("# Gitea:  Не доступен          #")  # 29
 
     lines.append("#=============================#")
-    lines.append(f"# Updated: {timestamp:<20}#")
+    lines.append(f"# Updated:{timestamp:>20}#")  # 29
     lines.append("#=============================#")
 
     return "\n".join(lines)

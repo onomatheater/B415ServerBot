@@ -7,8 +7,7 @@ from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode, ChatType
 from aiogram.filters import Command
-from aiogram.types import Message
-from aiogram.dispatcher.event.bases import ErrorEvent
+from aiogram.types import Message, ErrorEvent
 
 from config import (
     BOT_TOKEN,
@@ -98,6 +97,13 @@ async def periodic_status(bot: Bot):
     docker_was_ok = True
 
     while True:
+
+        try:
+            bot_info = await bot.get_me()
+        except Exception:
+            print("Bot stopped, exiting...")
+            break
+
         topic_id = get_topic_id()
         if topic_id is not None:
             # обычный статус
@@ -191,6 +197,11 @@ async def main():
         token=BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
+
+    me = await bot.get_me()
+    print(f"✅ Bot OK: @{me.username} ({me.id})")
+    print(f"📱 CHAT_ID из .env: {CHAT_ID}")
+
     dp = Dispatcher()
     dp.include_router(router)
 
@@ -201,10 +212,10 @@ async def main():
         CHAT_ID, UPDATE_INTERVAL, get_topic_id(),
     )
 
-    asyncio.create_task(periodic_status(bot))
-
-    await dp.start_polling(bot)
-
+    task1 = asyncio.create_task(periodic_status(bot))
+    task2 = asyncio.create_task(dp.start_polling(bot))
+    await asyncio.gather(task1, task2)
 
 if __name__ == "__main__":
     asyncio.run(main())
+

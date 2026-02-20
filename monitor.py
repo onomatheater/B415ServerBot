@@ -68,8 +68,8 @@ def build_status_block() -> str:
     d = get_docker_stats()
 
     lines = []
-    lines.append("#=====================#")
-    lines.append("# -----SERVER--------#")
+    lines.append("#=============================#")
+    lines.append("#-----------SERVER------------#")
 
     if s.get('ok'):
         ram_used_gb = bytes_to_gb(s['ram_used'])
@@ -77,43 +77,36 @@ def build_status_block() -> str:
         disk_used_gb = bytes_to_gb(s['disk_used'])
         disk_total_gb = bytes_to_gb(s['disk_total'])
 
-        lines.append(f"# CPU:  {s['cpu']:5.1f}%          #")
-        lines.append(
-            f"# RAM:  {ram_used_gb:4.1f}/{ram_total_gb:4.1f} Gb ({s['ram_percent']:5.1f}%) #"
-        )
-        lines.append(
-            f"# HDD:  {disk_used_gb:4.1f}/{disk_total_gb:4.1f} Gb ({s['disk_percent']:5.1f}%) #"
-        )
+        lines.append(f"# CPU:   {s['cpu']:>5.1f}%                #")
+        lines.append(f"# RAM:   {ram_used_gb:>3.1f}/{ram_total_gb:>4.1f} Gb ({s['ram_percent']:>5.1f}%) #")
+        lines.append(f"# HDD:   {disk_used_gb:>3.1f}/{disk_total_gb:>5.1f} Gb ({s['disk_percent']:>5.1f}%) #")
     else:
-        lines.append("# SERVER STATS ERROR  #")
-        err = (s.get('error') or 'unknown')[:19]
-        lines.append(f"# {err:>19} #")
+        lines.append("# SERVER STATS ERROR         #")
+        err = (s.get('error') or 'unknown')[:25]
+        lines.append(f"# {err:<25}#")
 
-    lines.append("#=====================#")
-    lines.append("# -----DOCKER--------#")
+    lines.append("#=============================#")
+    lines.append("#-----------DOCKER------------#")
 
     if d.get('ok'):
-        lines.append(f"# Containers: {d['total']:3d}           #")
-        lines.append(f"# Running:    {d['running']:3d}           #")
-        lines.append(f"# Stopped:    {d['stopped']:3d}           #")
-        lines.append("#---------------------#")
+        lines.append(f"# Containers:   {d['total']:>2d}             #")
+        lines.append(f"# Running:      {d['running']:>2d}             #")
+        lines.append(f"# Stopped:      {d['stopped']:>2d}             #")
+        lines.append("#-----------------------------#")
 
         names = d.get("names") or []
         if names:
-            lines.append("# List:              #")
-            max_names = 10
+            lines.append("# Container list:            #")
+            max_names = 8
             for name in names[:max_names]:
-                short = name[:25]
-                lines.append(f"# - {short:<21}#")
+                short = name[:28]
+                lines.append(f"# {short:<28}#")
             if len(names) > max_names:
-                lines.append(
-                    f"# ... and {len(names) - max_names:3d} more  #"
-                )
+                lines.append(f"# ... +{len(names) - max_names:>2d} more          #")
     else:
-        lines.append("# DOCKER STATS ERROR #")
-        err = (d.get('error') or 'unknown')[:19]
-        lines.append(f"# {err:>19} #")
+        lines.append("# DOCKER STATS ERROR         #")
+        lines.append("#-----------------------------#")
 
-    lines.append("#=====================#")
+    lines.append("#=============================#")
 
     return "\n".join(lines)

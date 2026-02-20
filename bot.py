@@ -20,7 +20,7 @@ from config import (
     DISK_CRIT,
     CRIT_CONFIRM_CYCLES,
 )
-from monitor import build_status_block, get_server_status, get_docker_stats
+from monitor import build_status_block, get_server_status, get_docker_stats, get_cloudflare_tunnels
 
 # ---------- ЛОГИ ----------
 
@@ -107,8 +107,10 @@ async def periodic_status(bot: Bot):
         topic_id = get_topic_id()
         if topic_id is not None:
             # обычный статус
+            tunnels = get_cloudflare_tunnels()
             block = build_status_block()
-            text = f"<pre>\n{block}\n</pre>"
+            hyperlinks = "🔗 <a href='{tunnels['affine']}'>AFFiNE</a> | <a href='{tunnels['gitea']}'>Gitea</a>" if tunnels.get('ok') else "🔗 Туннели недоступны"
+            text = f"<pre>{block}</pre>\n\n{hyperlinks}"
             try:
                 await bot.send_message(
                     chat_id=CHAT_ID,

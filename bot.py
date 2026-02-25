@@ -23,7 +23,7 @@ from config import (
     set_status_message_id,  # ← ДОБАВЬ ЭТО
 )
 
-from monitor import build_status_block, get_server_status, get_docker_stats, get_cloudflare_tunnels
+from monitor import build_status_block, get_server_status, get_docker_stats, build_tunnels_links
 
 # ---------- ЛОГИ ----------
 
@@ -83,7 +83,9 @@ async def send_status_once(message: Message):
     topic_id = message.message_thread_id or get_topic_id()
 
     block = build_status_block()
-    text = f"<pre>\n{block}\n</pre>"
+    links = build_tunnels_links()
+
+    text = f"<pre>\n{block}\n</pre>{links}"
 
     await message.bot.send_message(
         chat_id=message.chat.id,
@@ -109,8 +111,10 @@ async def periodic_status(bot: Bot):
 
         topic_id = get_topic_id()
         if topic_id is not None:
-            block = build_status_block()  # Всё внутри: туннели + время
-            text = f"<pre>{block}</pre>"
+            block = build_status_block()
+            tunnels = build_tunnels_links()
+
+            text = f"<pre>{block}</pre>{tunnels}"
 
             # ✅ ЛОГИКА ОДНОГО СООБЩЕНИЯ:
             try:

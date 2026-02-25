@@ -122,21 +122,35 @@ def build_status_block() -> str:
         lines.append("# DOCKER ERROR".ljust(WIDTH) + "       #")
         lines.append("#--------------------------#")
 
-    lines.append("#==========================#")
-    lines.append("#----CLOUDFLARE-TUNNELS----#")
-
-    # CLOUDFLARE
-    tunnels = get_cloudflare_tunnels()
-    if tunnels.get('ok'):
-        lines.append(f"# AFFiNE: {tunnels['affine'][:24]}".ljust(WIDTH) + "#")
-        lines.append(f"# Gitea:  {tunnels['gitea'][:24]}".ljust(WIDTH) + "#")
-    else:
-        lines.append("# AFFiNE: Не доступен".ljust(WIDTH) + "#")
-        lines.append("# Gitea:  Не доступен".ljust(WIDTH) + "#")
-
+    # НИЖНЯЯ ЧАСТЬ РАМКИ
     lines.append("#==========================#")
     lines.append(f"# Updated: {timestamp}".ljust(WIDTH) + "#")
     lines.append("#==========================#")
 
     return "\n".join(lines)
 
+# CLOUDFLARE
+def build_tunnels_links() -> str:
+    """
+    HTML-строка с ссылками AFFiNE / GITEA (при доступности)
+    """
+
+    tunnels = get_cloudflare_tunnels()
+
+    if not tunnels.get("ok"):
+        return ""
+
+    links: list[str] = []
+
+    affine = tunnels.get("affine") or ""
+    gitea = tunnels.get("gitea") or ""
+
+    if affine.startswith("http"):
+        links.append(f"<a href='{affine}'>AFFiNE</a>")
+    if gitea.startswith("http"):
+        links.append(f"<a href='{gitea}'>Gitea</a>")
+
+    if not links:
+        return ""
+
+    return "\n\n" + " | ".join(links)
